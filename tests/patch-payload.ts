@@ -6,7 +6,8 @@ export default {
     "id": "1",
     "attributes": {
       "title": "To TDD or Not",
-      "text": "TLDR; It's complicated... but check your test coverage regardless."
-    }
-  }
+      "text":
+        "TLDR; It's complicated... but check your test coverage regardless.",
+    },
+  },
 } as JsonApiTopLevelDocument;
