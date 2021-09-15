@@ -1,61 +1,149 @@
 import {
   JsonApiRelationshipsObject,
+  JsonApiResourceIdentifier,
   JsonApiResourceLinkage,
   JsonApiResourceObject,
   JsonApiTopLevelDocument,
 } from "./json-api-types.ts";
 
-export function deserialize<T extends Record<string, unknown>>(
-  payload: JsonApiTopLevelDocument<T>,
-) {
-  if (!payload.data) {
-    throw new Error("This does not seems to be a valid json-api payload.");
+type AttributeTransformFunction = (
+  key: string,
+  value: unknown,
+) => Promise<[string, unknown]> | [string, unknown];
+
+type RelationshipOneTransformFunction = (
+  key: string,
+  value: JsonApiResourceIdentifier | null,
+) => Promise<[string, unknown]> | [string, unknown];
+
+type RelationshipManyTransformFunction = (
+  key: string,
+  value: JsonApiResourceIdentifier[],
+) => Promise<[string, unknown]> | [string, unknown];
+
+export const defaultTransformAttributeFunction: AttributeTransformFunction = (
+  key: string,
+  value: unknown,
+) => [key, value];
+
+export const defaultTransformManyRelationshipFunction:
+  RelationshipManyTransformFunction = (
+    key: string,
+    value: JsonApiResourceIdentifier[],
+  ) => [key, value.map((e) => e.id)];
+
+export const defaultTransformOneRelationshipFunction:
+  RelationshipOneTransformFunction = (
+    key: string,
+    value: JsonApiResourceIdentifier | null,
+  ) => [key, value?.id];
+
+export class JsonApiDeserializer<T extends Record<string, unknown>> {
+  private _transformAttributeFunction: AttributeTransformFunction =
+    defaultTransformAttributeFunction;
+  private _transformOneRelationshipFunction: RelationshipOneTransformFunction =
+    defaultTransformOneRelationshipFunction;
+  private _transformManyRelationshipFunction:
+    RelationshipManyTransformFunction =
+      defaultTransformManyRelationshipFunction;
+
+  set transformAttributeFunction(value: AttributeTransformFunction) {
+    this._transformAttributeFunction = value;
   }
 
-  if (Array.isArray(payload.data)) {
-    throw new Error(
-      "The request MUST include a single resource object as primary data.",
+  set transformManyRelationshipFunction(
+    value: RelationshipManyTransformFunction,
+  ) {
+    this._transformManyRelationshipFunction = value;
+  }
+
+  set transformOneRelationshipFunction(
+    value: RelationshipOneTransformFunction,
+  ) {
+    this._transformOneRelationshipFunction = value;
+  }
+
+  public deserialize(payload: JsonApiTopLevelDocument<T>) {
+    if (!payload.data) {
+      throw new Error("This does not seems to be a valid json-api payload.");
+    }
+
+    if (Array.isArray(payload.data)) {
+      throw new Error(
+        "The request MUST include a single resource object as primary data.",
+      );
+    }
+
+    return this.deserializeResourceObject(payload.data);
+  }
+
+  protected async deserializeResourceObject(
+    resourceObject: JsonApiResourceObject,
+  ) {
+    const deserializedObject: Record<string, unknown> = {
+      id: resourceObject.id,
+      ...resourceObject.relationships
+        ? await this.handleRelationships(resourceObject.relationships)
+        : {},
+    };
+
+    const attributesPromises = [];
+
+    if (resourceObject.attributes) {
+      for (const attributeKey in resourceObject.attributes) {
+        attributesPromises.push((async () => {
+          const [transformedKey, transformedValue] = await this
+            ._transformAttributeFunction(
+              attributeKey,
+              resourceObject.attributes![attributeKey],
+            );
+          deserializedObject[transformedKey] = transformedValue;
+        })());
+      }
+    }
+
+    await Promise.all(attributesPromises);
+
+    return deserializedObject;
+  }
+
+  protected handleRelationshipData(
+    relationshipName: string,
+    resourceLinkage: JsonApiResourceLinkage,
+  ) {
+    if (Array.isArray(resourceLinkage)) {
+      return this._transformManyRelationshipFunction(
+        relationshipName,
+        resourceLinkage,
+      );
+    }
+    return this._transformOneRelationshipFunction(
+      relationshipName,
+      resourceLinkage,
     );
   }
 
-  return deserializeResourceObject(payload.data);
-}
+  protected async handleRelationships(
+    relationshipsObject: Record<string, JsonApiRelationshipsObject>,
+  ) {
+    const relationships: Record<string, unknown> = {};
+    const relationshipsPromises = [];
 
-export function deserializeResourceObject(
-  resourceObject: JsonApiResourceObject,
-) {
-  const deserializedObject: Record<string, unknown> = {
-    id: resourceObject.id,
-    ...resourceObject.attributes,
-    ...resourceObject.relationships
-      ? handleRelationships(resourceObject.relationships)
-      : {},
-  };
-  return deserializedObject;
-}
-
-function handleRelationshipData(
-  resourceLinkage: JsonApiResourceLinkage,
-): unknown {
-  if (Array.isArray(resourceLinkage)) {
-    return resourceLinkage.map((e) => handleRelationshipData(e));
-  }
-  return resourceLinkage?.id;
-}
-
-export function handleRelationships(
-  relationshipsObject: Record<string, JsonApiRelationshipsObject>,
-) {
-  const relationships: Record<string, unknown> = {};
-
-  for (const relationshipName in relationshipsObject) {
-    const relationShipValue = relationshipsObject[relationshipName];
-    if (relationShipValue.data) {
-      relationships[relationshipName] = handleRelationshipData(
-        relationShipValue.data,
-      );
+    for (const relationshipName in relationshipsObject) {
+      relationshipsPromises.push((async () => {
+        const relationShipValue = relationshipsObject[relationshipName];
+        if (relationShipValue.data) {
+          const [key, value] = await this.handleRelationshipData(
+            relationshipName,
+            relationShipValue.data,
+          );
+          relationships[key] = value;
+        }
+      })());
     }
-  }
 
-  return relationships;
+    await Promise.all(relationshipsPromises);
+
+    return relationships;
+  }
 }
