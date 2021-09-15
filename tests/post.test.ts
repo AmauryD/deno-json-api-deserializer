@@ -1,6 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.106.0/testing/asserts.ts";
 import { deserialize } from "../src/index.ts";
-import postPayload from "./post-payload.ts";
+import postPayload from "./payloads/post-payload.ts";
 
 // Simple name and function, compact form, but not configurable
 Deno.test("Deserialize basic post", () => {

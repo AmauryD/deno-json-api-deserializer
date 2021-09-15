@@ -1,4 +1,4 @@
-import { JsonApiTopLevelDocument } from "../src/json-api-types.ts";
+import { JsonApiTopLevelDocument } from "../../src/json-api-types.ts";
 
 export default {
   "data": {

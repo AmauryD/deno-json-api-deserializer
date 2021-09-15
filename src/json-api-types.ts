@@ -46,3 +46,17 @@ export interface JsonApiResourceObject<
   links?: JsonApiLinks;
   meta?: Record<string, unknown>;
 }
+
+export interface JsonApiResourceObjectCreate<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> extends JsonApiResourceObject<T> {
+  id?: string; // optional for create
+  type?: string;
+}
+
+export interface JsonApiResourceObjectUpdate<
+  T extends Record<string, unknown> = Record<string, unknown>,
+> extends JsonApiResourceObject<T> {
+  id: string; // optional for create
+  type: string;
+}
