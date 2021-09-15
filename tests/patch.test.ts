@@ -1,6 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.106.0/testing/asserts.ts";
 import { deserialize } from "../src/index.ts";
-import patchPayload from "./patch-payload.ts";
+import patchPayload from "./payloads/patch-payload.ts";
 
 Deno.test("Deserialize basic patch", () => {
   const result = deserialize(patchPayload);
