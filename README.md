@@ -69,7 +69,7 @@ async function main() {
 
 Filtering
 
-```
+```typescript
 import { JsonApiDeserializer } from "...";
 
 // allowed elements
