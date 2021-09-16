@@ -1,12 +1,13 @@
 # deno-json-api-deserializer [![Deno](https://github.com/AmauryD/deno-json-api-deserializer/actions/workflows/deno.yml/badge.svg)](https://github.com/AmauryD/deno-json-api-deserializer/actions/workflows/deno.yml)
 
-A deserializer for JSON:API payloads
+A backend deserializer for JSON:API payloads.
 
 ## Features
 
 - Deserialize JSON:API payloads
 - Async
 - Highly modular with transforms functions
+- Filtering attributes/relationships
 
 ## Examples
 
