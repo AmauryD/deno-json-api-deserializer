@@ -6,7 +6,6 @@ import {
   relationshipsPayload,
 } from "./payloads/post-payload.ts";
 
-// Simple name and function, compact form, but not configurable
 Deno.test("Deserialize post", async () => {
   const deserializer = new JsonApiDeserializer();
   const result = await deserializer.deserialize(basicPayload);

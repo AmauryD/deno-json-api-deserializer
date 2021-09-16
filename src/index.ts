@@ -9,17 +9,17 @@ import {
 type AttributeTransformFunction = (
   key: string,
   value: unknown,
-) => Promise<[string, unknown]> | [string, unknown];
+) => Promise<[string, unknown] | undefined> | [string, unknown] | undefined;
 
 type RelationshipOneTransformFunction = (
   key: string,
   value: JsonApiResourceIdentifier | null,
-) => Promise<[string, unknown]> | [string, unknown];
+) => Promise<[string, unknown] | undefined> | [string, unknown] | undefined;
 
 type RelationshipManyTransformFunction = (
   key: string,
   value: JsonApiResourceIdentifier[],
-) => Promise<[string, unknown]> | [string, unknown];
+) => Promise<[string, unknown] | undefined> | [string, unknown] | undefined;
 
 export const defaultTransformAttributeFunction: AttributeTransformFunction = (
   key: string,
@@ -92,12 +92,15 @@ export class JsonApiDeserializer<T extends Record<string, unknown>> {
     if (resourceObject.attributes) {
       for (const attributeKey in resourceObject.attributes) {
         attributesPromises.push((async () => {
-          const [transformedKey, transformedValue] = await this
+          const attributeResult = await this
             ._transformAttributeFunction(
               attributeKey,
               resourceObject.attributes![attributeKey],
             );
-          deserializedObject[transformedKey] = transformedValue;
+          if (attributeResult === undefined) {
+            return;
+          }
+          deserializedObject[attributeResult[0]] = attributeResult[1];
         })());
       }
     }
@@ -133,11 +136,14 @@ export class JsonApiDeserializer<T extends Record<string, unknown>> {
       relationshipsPromises.push((async () => {
         const relationShipValue = relationshipsObject[relationshipName];
         if (relationShipValue.data) {
-          const [key, value] = await this.handleRelationshipData(
+          const relationshipData = await this.handleRelationshipData(
             relationshipName,
             relationShipValue.data,
           );
-          relationships[key] = value;
+          if (relationshipData === undefined) {
+            return;
+          }
+          relationships[relationshipData[0]] = relationshipData[1];
         }
       })());
     }

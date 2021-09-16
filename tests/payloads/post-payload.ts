@@ -5,6 +5,7 @@ export const basicPayload = {
     "type": "photos",
     "attributes": {
       "title": "a nice photo",
+      "src": "http://localhost",
     },
   },
 } as JsonApiTopLevelDocument;
