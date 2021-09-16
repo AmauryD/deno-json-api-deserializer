@@ -61,7 +61,7 @@ Deno.test("Custom async one relationships function", async () => {
         res([
           key.toUpperCase(),
           `${value?.type}_${value?.id}`,
-        ]), 500)
+        ]), 100)
     );
   };
   deserializer.transformManyRelationshipFunction = () => {
@@ -84,7 +84,7 @@ Deno.test("Custom async many relationships function", async () => {
         res([
           key.toUpperCase(),
           value.map((e) => `${e.type}_${e.id}`),
-        ]), 500)
+        ]), 100)
     );
   };
 

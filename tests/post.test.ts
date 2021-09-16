@@ -3,6 +3,7 @@ import { JsonApiDeserializer } from "../src/index.ts";
 import {
   basicPayload,
   idPayload,
+  relationshipsArrayPayload,
   relationshipsPayload,
 } from "./payloads/post-payload.ts";
 
@@ -11,6 +12,7 @@ Deno.test("Deserialize post", async () => {
   const result = await deserializer.deserialize(basicPayload);
   assertEquals(result.id, undefined);
   assertEquals(result.title, "a nice photo");
+  assertEquals(result.src, "http://localhost");
 });
 
 Deno.test("Deserialize post with relationships", async () => {
@@ -18,6 +20,13 @@ Deno.test("Deserialize post with relationships", async () => {
   const result = await deserializer.deserialize(relationshipsPayload);
   assertEquals(result.id, undefined);
   assertEquals(result.photographer, "9");
+});
+
+Deno.test("Deserialize post with muliple relationships", async () => {
+  const deserializer = new JsonApiDeserializer();
+  const result = await deserializer.deserialize(relationshipsArrayPayload);
+  assertEquals(result.id, undefined);
+  assertEquals(result.photographers, ["9", "10"]);
 });
 
 Deno.test("Deserialize post with id", async () => {
